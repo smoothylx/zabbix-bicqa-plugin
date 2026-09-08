@@ -16,10 +16,32 @@
         return;
     }
 
+    // 命中条件：问题「标记」文本中包含下列任一关键词才显示 AI 按钮。
+    // 匹配不区分大小写；中文「数据库」与常见英文写法都已包含，可按需增删。
+    var DB_KEYWORDS = [
+        '数据库', 'database', 'mysql', 'oracle', 'postgresql', 'mongo',
+        'mongodb', 'redis', 'mssql', 'sql server', 'mariadb', 'tidb', 'db2'
+    ];
+
     function buildMainUrl(text) {
         return window.location.pathname
             + '?action=bicqa.main&tab=analyze&text='
             + encodeURIComponent(text);
+    }
+
+    // 判断某问题行的「标记」中是否含数据库关键词。
+    function hasDbTag(tr) {
+        var wrapper = tr.querySelector('.tags-wrapper');
+        if (!wrapper) {
+            return false;       // 未开启「标签」列，或该行无标记
+        }
+        var text = (wrapper.textContent || '').toLowerCase();
+        for (var i = 0; i < DB_KEYWORDS.length; i++) {
+            if (text.indexOf(DB_KEYWORDS[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function isInjectTarget(tr) {
@@ -36,6 +58,10 @@
         // Zabbix 的「今天 / 昨天 / 九月」等时间分组表头行（既非 row-disabled
         // 也无 th）没有这两个节点，会被这里拦住，避免按钮出现在分组行上。
         if (!tr.querySelector('.problem-name') && !tr.querySelector('a[href*="eventid"]')) {
+            return false;
+        }
+        // 只注入「标记」含数据库关键词的问题行。
+        if (!hasDbTag(tr)) {
             return false;
         }
         return true;
